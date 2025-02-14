@@ -1,22 +1,20 @@
 package com.project01_teamA.camping_lounge.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class Campsite extends BaseTimeEntity {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="CAMP_ID")
     private Long id;
 
@@ -88,6 +86,19 @@ public class Campsite extends BaseTimeEntity {
 
     @Column(nullable = false, name = "CAMP_LIKE")
     private Integer campLike;
+
+    @OneToMany(mappedBy = "campsite", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
+    public List<CampThumbFiles> thumb = new ArrayList<>();
+
+    @OneToMany(mappedBy = "campsite", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @BatchSize(size = 10)
+    public List<CampImageFiles> images = new ArrayList<>();
+
+    //== 조회수 증가 ==//
+    public void upViewCount() {
+        this.campHit++;
+    }
 
     @Builder
     public Campsite(Long id, String campName, Integer campThumb, Integer campImages, String campInfo, String campTel, String campAddressDo, String campAddressGungu, String campAddress1, String campAddress2, String campMapX, String campMapY, Boolean toilet, Boolean hotWater, Boolean electric, Boolean fireWood, Boolean wifi, Boolean playGround, Boolean pet, Boolean swimming, Integer totalCapacity, Date campPostingDate, Integer campHit, Integer campLike) {

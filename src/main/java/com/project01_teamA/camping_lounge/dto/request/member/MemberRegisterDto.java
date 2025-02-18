@@ -20,16 +20,22 @@ public class MemberRegisterDto {
     private String password;
     private String gender;
     private String tel;
+    private String postcode;
+    private String address;
+    private String address_detail;
     private Date join_date;
     private Role role;
 
     @Builder
-    public MemberRegisterDto(String email, String name, String password, String gender, String tel, Date join_date, Role role) {
+    public MemberRegisterDto(String email, String name, String password, String gender, String tel, String postcode, String address, String address_detail, Date join_date, Role role) {
         this.email = email;
         this.name = name;
         this.password = password;
         this.gender = gender;
         this.tel = tel;
+        this.postcode = postcode;
+        this.address = address;
+        this.address_detail = address_detail;
         this.join_date = join_date;
         this.role = role;
     }

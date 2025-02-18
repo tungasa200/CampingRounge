@@ -60,11 +60,13 @@ public class ReviewFileService {
             // 파일 저장
             Files.copy(file.getInputStream(), Paths.get(filePath));
 
+            String fileType = file.getContentType();
             // ReviewFiles 엔티티에 데이터 저장
             ReviewFiles reviewFile = new ReviewFiles();
             reviewFile.setReview(review);
             reviewFile.setOriginFileName(originFileName);
-            reviewFile.setStoredFileName(storedFileName);
+            reviewFile.setFilePath(filePath);
+            reviewFile.setFileType(fileType);
 
             ReviewFiles savedFile = reviewFileRepository.save(reviewFile);
 

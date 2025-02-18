@@ -20,16 +20,24 @@ public class MemberUpdateDto {
     private String password;
     private String gender;
     private String tel;
+    private String address;
+    private String address_detail;
+    private String postcode;
     private boolean profile;
 
     @Builder
-    public MemberUpdateDto(String email, String name, String password, String gender, String tel, boolean profile) {
+
+    public MemberUpdateDto(String email, String name, String password, String gender, String tel, String address, String address_detail, String postcode, boolean profile) {
         this.email = email;
         this.name = name;
         this.password = password;
         this.gender = gender;
         this.tel = tel;
+        this.address = address;
+        this.address_detail = address_detail;
+        this.postcode = postcode;
         this.profile = profile;
     }
 }
+
 

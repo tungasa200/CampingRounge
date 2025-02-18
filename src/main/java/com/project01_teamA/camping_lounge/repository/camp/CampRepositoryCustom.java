@@ -1,4 +1,4 @@
-package com.project01_teamA.camping_lounge.repository;
+package com.project01_teamA.camping_lounge.repository.camp;
 
 import com.project01_teamA.camping_lounge.dto.response.camp.ResCampListDto;
 import org.springframework.data.domain.Page;

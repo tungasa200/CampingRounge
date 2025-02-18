@@ -18,7 +18,7 @@ public class CampThumbFiles {
     private Campsite campsite;
 
     @Column
-    private String originFileName;
+    private String originalFileName;
 
     @Column(name = "FILE_TYPE")
     private String fileType;
@@ -27,9 +27,9 @@ public class CampThumbFiles {
     private String filePath;
 
     @Builder
-    public CampThumbFiles(Long id, String originFileName, String fileType, String filePath) {
+    public CampThumbFiles(Long id, String originalFileName, String fileType, String filePath) {
         this.id = id;
-        this.originFileName = originFileName;
+        this.originalFileName = originalFileName;
         this.fileType = fileType;
         this.filePath = filePath;
     }

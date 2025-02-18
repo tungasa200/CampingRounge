@@ -9,20 +9,23 @@ public class ReviewFileUploadDTO {
 
     private Long fileId;
     private String originFileName;
-    private String storedFileName;
+    private String fileType;
+    private String filePath;
 
     @Builder
-    public ReviewFileUploadDTO(Long fileId, String originFileName, String storedFileName) {
+    public ReviewFileUploadDTO(Long fileId, String originFileName, String fileType, String filePath) {
         this.fileId = fileId;
         this.originFileName = originFileName;
-        this.storedFileName = storedFileName;
+        this.fileType = fileType;
+        this.filePath = filePath;
     }
 
     public static ReviewFileUploadDTO fromEntity(ReviewFiles files){
         return ReviewFileUploadDTO.builder()
                 .fileId(files.getFileId())
                 .originFileName(files.getOriginFileName())
-                .storedFileName(files.getStoredFileName())
+                .fileType(files.getFileType())
+                .filePath(files.getFilePath())
                 .build();
     }
 

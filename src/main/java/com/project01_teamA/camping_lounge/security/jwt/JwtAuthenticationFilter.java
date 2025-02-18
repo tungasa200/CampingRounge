@@ -82,8 +82,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 log.info("Unable to get JWT Token !!");
                 e.getStackTrace();
             }
-            
-        } 
+
+        }
         //토큰이 없는 경우
         else {
             log.info("JWT does not begin with Bearer !!");

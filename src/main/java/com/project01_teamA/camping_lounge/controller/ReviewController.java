@@ -4,6 +4,9 @@ import com.project01_teamA.camping_lounge.dto.response.review.ReviewDetailDTO;
 import com.project01_teamA.camping_lounge.dto.response.review.ReviewListDTO;
 import com.project01_teamA.camping_lounge.dto.request.review.ReviewUpdateDTO;
 import com.project01_teamA.camping_lounge.dto.request.review.ReviewWriteDTO;
+import com.project01_teamA.camping_lounge.dto.response.review.ReviewSurveyDTO;
+import com.project01_teamA.camping_lounge.entity.ReviewSurvey;
+import com.project01_teamA.camping_lounge.repository.ReviewSurveyRepository;
 import com.project01_teamA.camping_lounge.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +22,10 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/review")
+@CrossOrigin(origins = "*")
 public class ReviewController {
     private final ReviewService reviewService;
+    private final ReviewSurveyRepository reviewSurveyRepository;
 
     // 리뷰 목록
     @GetMapping("/list")
@@ -47,13 +52,14 @@ public class ReviewController {
         return ResponseEntity.ok(reviewDetail);
     }
 
+
     // 리뷰 삭제
     @PostMapping("/delete")
     public ResponseEntity<Long> delete(Long reviewId){
         reviewService.delete(reviewId);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
-    
+
     // 리뷰 수정
     @PostMapping("/update/{reviewId}")
     public ResponseEntity<ReviewDetailDTO> updateReview(
@@ -66,6 +72,14 @@ public class ReviewController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new ReviewDetailDTO());
         }
-
     }
+
+    // 좋아요 토글
+    @PostMapping("/{reviewId}/like")
+    public ResponseEntity<Void> toggleLike(@PathVariable Long reviewId, @RequestParam boolean isLiked) {
+        reviewService.toggleLike(reviewId, isLiked);
+        return ResponseEntity.ok().build();
+    }
+
+
 }

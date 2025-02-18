@@ -15,6 +15,14 @@ public class Review extends BaseTime {
     @Column(name = "review_id")
     private Long reviewId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "camp_id")
+    private Campsite campsite;
+
     @Column(name = "review_title", nullable = false)
     private String reviewTitle;
 
@@ -27,18 +35,43 @@ public class Review extends BaseTime {
     @Column(name = "review_hit", columnDefinition = "int default 0")
     private int reviewHit;
 
+    @Column(name = "review_like", columnDefinition = "int default 0")
+    private int reviewLike;
+
     @Builder
-    public Review(Long reviewId, String reviewTitle, String reviewContent, int reviewHit, List<ReviewFiles> reviewFiles) {
+    public Review(Long reviewId, Member member, Campsite campsite, String reviewTitle, String reviewContent, int reviewHit, List<ReviewFiles> reviewFiles, int reviewLike) {
         this.reviewId = reviewId;
+        this.member = member;
+        this.campsite = campsite;
         this.reviewTitle = reviewTitle;
         this.reviewContent = reviewContent;
         this.reviewHit = reviewHit;
         this.reviewFiles = reviewFiles;
+        this.reviewLike = reviewLike;
     }
 
     // 조회 수 증가
-    public void upViewCount() {
+    public void incrementViewCount() {
         this.reviewHit++;
+    }
+
+    // 좋아요 수 증가
+    public void incrementLikeCount() {
+        this.reviewLike++;
+    }
+
+    // 좋아요 수 감소
+    public void decrementLikeCount() {
+        this.reviewLike--;
+    }
+
+    // 좋아요 토글
+    public void toggleLike(boolean isLiked) {
+        if (isLiked) {
+            incrementLikeCount();
+        } else {
+            decrementLikeCount();
+        }
     }
 
     // 수정
@@ -46,4 +79,7 @@ public class Review extends BaseTime {
         this.reviewTitle = reviewTitle;
         this.reviewContent = reviewContent;
     }
+
+
+
 }

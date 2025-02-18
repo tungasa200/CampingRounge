@@ -1,7 +1,9 @@
-package com.project01_teamA.camping_lounge.repository;
+package com.project01_teamA.camping_lounge.repository.camp;
 
 import com.project01_teamA.camping_lounge.dto.response.camp.ResCampListDto;
+import com.project01_teamA.camping_lounge.dto.response.camp.ResCampThumbUploadDto;
 import com.project01_teamA.camping_lounge.entity.Campsite;
+import com.project01_teamA.camping_lounge.entity.QCampThumbFiles;
 import com.project01_teamA.camping_lounge.entity.QCampsite;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -22,6 +24,7 @@ public class CampRepositoryCustomImpl implements CampRepositoryCustom {
     @Override
     public Page<ResCampListDto> findFilteredCamps(String search, List<String> filters, Pageable pageable) {
         QCampsite camp = QCampsite.campsite;
+        QCampThumbFiles thumb = QCampThumbFiles.campThumbFiles;
         BooleanBuilder builder = new BooleanBuilder();
 
         //검색기능
@@ -50,6 +53,7 @@ public class CampRepositoryCustomImpl implements CampRepositoryCustom {
         //페이징
         List<Campsite> campList = queryFactory
                 .select(camp)
+                .leftJoin(camp.thumb, thumb).fetchJoin()
                 .where(builder)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -63,7 +67,16 @@ public class CampRepositoryCustomImpl implements CampRepositoryCustom {
 
         //DTO 전환
         List<ResCampListDto> dtoList = campList.stream()
-                .map(ResCampListDto::fromEntity)
+                .map(c -> ResCampListDto.builder()
+                        .id(c.getId())
+                        .campName(c.getCampName())
+                        .campInfo(c.getCampInfo())
+                        .campAddressDo(c.getCampAddressDo())
+                        .campAddressGungu(c.getCampAddressGungu())
+                        .thumb(c.getThumb().stream()
+                                .map(ResCampThumbUploadDto::fromEntity)
+                                .collect(Collectors.toList()))
+                        .build())
                 .collect(Collectors.toList());
 
         return new PageImpl<>(dtoList, pageable, total);

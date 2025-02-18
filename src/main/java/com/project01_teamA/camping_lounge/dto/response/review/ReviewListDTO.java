@@ -14,21 +14,33 @@ public class ReviewListDTO {
     private String reviewTitle;
     private String reviewContent;
     private int reviewHit;
+    private int reviewLike;
+    private String reviewThumbImg;
 
     @Builder
-    public ReviewListDTO(Long reviewId, String reviewTitle, String reviewContent, int reviewHit) {
+    public ReviewListDTO(Long reviewId, String reviewTitle, String reviewContent, int reviewHit, int reviewLike, String reviewThumbImg) {
         this.reviewId = reviewId;
         this.reviewTitle = reviewTitle;
         this.reviewContent = reviewContent;
         this.reviewHit = reviewHit;
+        this.reviewLike = reviewLike;
+        this.reviewThumbImg = reviewThumbImg;
     }
 
     public static ReviewListDTO fromEntity(Review review){
+
+        String reviewThumbImg = null;
+        if (review.getReviewFiles() != null && !review.getReviewFiles().isEmpty()) {
+            reviewThumbImg = review.getReviewFiles().get(0).getFilePath();
+        }
+
         return ReviewListDTO.builder()
                 .reviewId(review.getReviewId())
                 .reviewTitle(review.getReviewTitle())
                 .reviewContent(review.getReviewContent())
                 .reviewHit(review.getReviewHit())
+                .reviewLike(review.getReviewLike())
+                .reviewThumbImg(reviewThumbImg)
                 .build();
     }
 }

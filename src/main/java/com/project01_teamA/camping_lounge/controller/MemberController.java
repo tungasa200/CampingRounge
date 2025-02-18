@@ -1,20 +1,24 @@
 package com.project01_teamA.camping_lounge.controller;
 
-import com.project01_teamA.camping_lounge.dto.MemberDto;
 import com.project01_teamA.camping_lounge.dto.request.member.AdminRegisterDto;
 import com.project01_teamA.camping_lounge.dto.request.member.MemberLoginDto;
 import com.project01_teamA.camping_lounge.dto.request.member.MemberRegisterDto;
 import com.project01_teamA.camping_lounge.dto.request.member.MemberUpdateDto;
+import com.project01_teamA.camping_lounge.dto.response.member.MemberResponseDto;
+import com.project01_teamA.camping_lounge.dto.response.member.MemberTokenDto;
 import com.project01_teamA.camping_lounge.entity.Member;
 import com.project01_teamA.camping_lounge.service.MemberService;
 import com.project01_teamA.camping_lounge.service.ProfileFileService;
 import com.project01_teamA.camping_lounge.service.SecurityKeyService;
-import jakarta.servlet.http.HttpSession;
 
+import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
 
 
 @RestController
@@ -23,39 +27,22 @@ import org.springframework.web.multipart.MultipartFile;
 //@RequiredArgsConstructor
 public class MemberController {
     private final MemberService memberService;
-    private final SecurityKeyService securityKeyService;
     private final ProfileFileService profileFileService;
+    private final SecurityKeyService securityKeyService;
 
-    public MemberController(MemberService memberService, SecurityKeyService securityKeyService, ProfileFileService profileFileService) {
+
+    public MemberController(MemberService memberService, ProfileFileService profileFileService, SecurityKeyService securityKeyService) {
         this.memberService = memberService;
-        this.securityKeyService = securityKeyService;
         this.profileFileService = profileFileService;
+        this.securityKeyService = securityKeyService;
     }
 
-    // 보안키 기능
-
-    @GetMapping("/securityKey")
-    public ResponseEntity<String> getSecurityKey() {
-         return ResponseEntity.status(HttpStatus.OK).body(securityKeyService.getSecurityKey());
-    }
-
-    @GetMapping("/regenerateKey")
-    public ResponseEntity<String> regenerateKey() {
-        securityKeyService.generateKey();
-        return ResponseEntity.status(HttpStatus.OK).body("Key Regenerated");
-    }
 
     // 유저 기능
 
     @PostMapping("/join")
     public ResponseEntity<String> join(@RequestBody MemberRegisterDto memberRegisterDto) {
         memberService.join(memberRegisterDto);
-        return ResponseEntity.status(HttpStatus.OK).body("회원가입 성공");
-    }
-
-    @PostMapping("/adminJoin")
-    public ResponseEntity<String> adminJoin(@RequestBody AdminRegisterDto adminRegisterDto) {
-        memberService.adminJoin(adminRegisterDto);
         return ResponseEntity.status(HttpStatus.OK).body("회원가입 성공");
     }
 
@@ -66,58 +53,28 @@ public class MemberController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody MemberLoginDto memberLoginDto) {
-        Member member = memberService.login(memberLoginDto);
+        MemberTokenDto loginDTO = memberService.login(memberLoginDto);
         // true 면 로그인 성공, false 로그인 실패
-        if (member.isEnable()) {
+        if (loginDTO.isEnable()) {
             //.header(member.getToken() : JWT 데이터들 header로 넘겨줘야 함(매우 중요)
-            return ResponseEntity.status(HttpStatus.OK).header(member.getToken()).body(member);
+            return ResponseEntity.status(HttpStatus.OK).header(loginDTO.getToken()).body(loginDTO);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인 실패: 비활성화 상태입니다.");
         }
     }
 
-//    @PostMapping("/login")
-//    public ResponseEntity<?> login(@RequestBody MemberLoginDto memberLoginDto, HttpSession session) {
-//        Member member = memberService.login(memberLoginDto);
-//
-//        // true 면 로그인 성공, false 로그인 실패
-//        if (member.isEnable()) {
-//            // 세션 유지 (jwt 대체 임시용)
-//            //session.setAttribute("loggedInUser", member);
-//            return ResponseEntity.status(HttpStatus.OK).body(member.getRole());
-//        } else {
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인 실패: 비활성화 상태입니다.");
-//        }
-//    }
-
+    //@AuthenticationPrincipal : 현재 로그인한 사용자의 인증 정보를 가져오는 어노테이션
+    //Spring Security에서 제공하는 기능으로, JWT 인증 방식과 연동 가능
     @GetMapping("/me")
-    public ResponseEntity<?> getUser(HttpSession session) {
-        Member member = (Member) session.getAttribute("loggedInUser");
-
-        if (member == null) {
-            System.out.println("세션에 사용자 정보 없음 (로그인이 필요합니다.)");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
-        }
-
-        MemberDto memberDto = MemberDto.builder()
-                .email(member.getEmail())
-                .name(member.getName())
-                .tel(member.getTel())
-                .role(member.getRole())
-                .gender(member.getGender())
-                .profile(member.isProfile())
-                .join_date(member.getJoin_date())
-                .build();
-
+    public ResponseEntity<MemberResponseDto> getUser(@AuthenticationPrincipal Member member) {
+        MemberResponseDto memberDto = memberService.getUser(member);
         return ResponseEntity.status(HttpStatus.OK).body(memberDto);
     }
 
     @GetMapping("/unable")
-    public ResponseEntity<String> userUnable(HttpSession session) {
-        Member member = (Member) session.getAttribute("loggedInUser");
+    public ResponseEntity<String> userUnable(@AuthenticationPrincipal Member member) {
         if (member.isEnable()) {
             memberService.userDisabled(member);
-            session.removeAttribute("loggedInUser");
             return ResponseEntity.status(HttpStatus.OK).body("유저 비활성화 성공");
         } else {
             return ResponseEntity.status(HttpStatus.OK).body("이미 비활성화 상태입니다");
@@ -125,34 +82,38 @@ public class MemberController {
     }
 
     @PutMapping("/update")
-    public ResponseEntity<String> userUpdate(HttpSession session,
-                                             @RequestBody MemberUpdateDto memberUpdateDto) {
-
-        Member member = (Member) session.getAttribute("loggedInUser");
-
-        Member memberUpdate = memberService.userUpdate(member, memberUpdateDto);
-
-        session.setAttribute("loggedInUser", memberUpdate);
-        return ResponseEntity.status(HttpStatus.OK).body("회원 정보 수정 완료");
+    public ResponseEntity<MemberResponseDto> userUpdate(@AuthenticationPrincipal Member member, @RequestBody MemberUpdateDto memberUpdateDTO) {
+        MemberResponseDto memberUpdate = memberService.userUpdate(member, memberUpdateDTO);
+        return ResponseEntity.status(HttpStatus.OK).body(memberUpdate);
     }
 
     // 파일 기능
 
     @PostMapping("/upload")
-    public ResponseEntity<String> fileUpload(HttpSession session, @RequestParam MultipartFile file) {
-        Member member = (Member) session.getAttribute("loggedInUser");
-
+    public ResponseEntity<String> fileUpload(@AuthenticationPrincipal Member member, @RequestParam MultipartFile file) {
         String response = profileFileService.uploadFile(member.getId(), file);
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @GetMapping("/getProfile")
-    public ResponseEntity<String> getProfileImagePath(HttpSession session) {
-        Member member = (Member) session.getAttribute("loggedInUser");
-
+    public ResponseEntity<String> getProfileImagePath(@AuthenticationPrincipal Member member) {
         String response = profileFileService.getProfileImagePath(member.getId());
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @DeleteMapping("/deleteProfile")
+    public ResponseEntity<String> deleteProfile(@AuthenticationPrincipal Member member) {
+        profileFileService.deleteFile(member.getId());
+
+        return ResponseEntity.status(HttpStatus.OK).body("파일 삭제 성공");
+    }
+
+    // 보안키 검증
+    @PostMapping("/checkKey")
+    public boolean checkKey(@RequestBody Map<String, String> request) {
+        String inputKey = request.get("securityKey");
+        return securityKeyService.validateSecurityKey(inputKey);
     }
 }

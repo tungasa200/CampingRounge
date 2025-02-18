@@ -11,6 +11,8 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 @Component
@@ -20,6 +22,9 @@ public class JwtTokenUtil implements Serializable {
 
     @Value("${jwt.tokenExpirationTime}") private Integer tokenExpirationTime;
     @Value("${jwt.secret}") private String secret;
+
+    // 🔹 블랙리스트(무효화된 토큰 저장)
+    private final Set<String> invalidatedTokens = ConcurrentHashMap.newKeySet();
 
     // extract username from jwt token
     public String getUsernameFromToken(String token) {
@@ -70,4 +75,15 @@ public class JwtTokenUtil implements Serializable {
         final String username = getUsernameFromToken(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
+
+    // ✅ 기존 JWT 토큰 무효화 (블랙리스트 추가)
+    public void invalidateToken(String token) {
+        invalidatedTokens.add(token);
+    }
+
+    // ✅ 블랙리스트 확인 (토큰이 무효화되었는지 체크)
+    public boolean isTokenInvalidated(String token) {
+        return invalidatedTokens.contains(token);
+    }
+
 }

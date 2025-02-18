@@ -22,14 +22,18 @@ public class ReviewFiles {
     @Column(name = "origin_file_name", nullable = false)
     private String originFileName;
 
-    @Column(name = "stored_file_name", nullable = false)
-    private String storedFileName;
+    @Column(name = "file_type", nullable = false)
+    private String fileType;
+
+    @Column(name = "file_path", nullable = false)
+    private String filePath;
 
     @Builder
-    public ReviewFiles(Long fileId, Review review, String originFileName, String storedFileName) {
+    public ReviewFiles(Long fileId, Review review, String originFileName, String fileType, String filePath) {
         this.fileId = fileId;
         this.review = review;
         this.originFileName = originFileName;
-        this.storedFileName = storedFileName;
+        this.fileType = fileType;
+        this.filePath = filePath;
     }
 }

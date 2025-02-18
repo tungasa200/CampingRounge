@@ -25,10 +25,10 @@ public class ResCampListDto {
     private Integer totalCapacity;
     private Integer campHit;
     private Integer campLike;
-    private List<ResCampThumbFilesDto> thumb;
+    private List<ResCampThumbUploadDto> thumb;
 
     @Builder
-    public ResCampListDto(Long id, String campName, String campInfo, String campAddressDo, String campAddressGungu, Boolean toilet, Boolean hotWater, Boolean electric, Boolean fireWood, Boolean wifi, Boolean playGround, Boolean pet, Boolean swimming, Integer totalCapacity, Integer campHit, Integer campLike, List<ResCampThumbFilesDto> thumb) {
+    public ResCampListDto(Long id, String campName, String campInfo, String campAddressDo, String campAddressGungu, Boolean toilet, Boolean hotWater, Boolean electric, Boolean fireWood, Boolean wifi, Boolean playGround, Boolean pet, Boolean swimming, Integer totalCapacity, Integer campHit, Integer campLike, List<ResCampThumbUploadDto> thumb) {
         this.id = id;
         this.campName = campName;
         this.campInfo = campInfo;
@@ -67,7 +67,7 @@ public class ResCampListDto {
                 .campHit(campsite.getCampHit())
                 .campLike(campsite.getCampLike())
                 .thumb(campsite.getThumb().stream()
-                        .map(ResCampThumbFilesDto::fromEntity)
+                        .map(ResCampThumbUploadDto::fromEntity)
                         .collect(Collectors.toList())
                 )
                 .build();

@@ -3,10 +3,14 @@ package com.project01_teamA.camping_lounge.service;
 import com.project01_teamA.camping_lounge.dto.request.member.AdminRegisterDto;
 import com.project01_teamA.camping_lounge.dto.request.member.MemberLoginDto;
 import com.project01_teamA.camping_lounge.dto.request.member.MemberUpdateDto;
+import com.project01_teamA.camping_lounge.dto.response.member.MemberResponseDto;
+import com.project01_teamA.camping_lounge.dto.response.member.MemberTokenDto;
 import com.project01_teamA.camping_lounge.exception.MemberException;
 import com.project01_teamA.camping_lounge.dto.request.member.MemberRegisterDto;
 import com.project01_teamA.camping_lounge.entity.Member;
+import com.project01_teamA.camping_lounge.exception.ResourceNotFoundException;
 import com.project01_teamA.camping_lounge.repository.MemberRepository;
+import com.project01_teamA.camping_lounge.repository.ProfileFilesRepository;
 import com.project01_teamA.camping_lounge.security.jwt.CustomUserDetailsService;
 import com.project01_teamA.camping_lounge.security.jwt.JwtTokenUtil;
 import jakarta.transaction.Transactional;
@@ -21,6 +25,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -28,17 +34,13 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final SecurityKeyService securityKeyService;
+    private final ProfileFilesRepository profileFilesRepository;
+    private final ProfileFileService profileFileService;
     private final JwtTokenUtil jwtTokenUtil;
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
 
-//    public MemberService(MemberRepository memberRepository, PasswordEncoder passwordEncoder, SecurityKeyService securityKeyService) {
-//        this.memberRepository = memberRepository;
-//        this.passwordEncoder = passwordEncoder;
-//        this.securityKeyService = securityKeyService;
-//    }
-
-    public void join(MemberRegisterDto memberRegisterDto) {
+    public Member join(MemberRegisterDto memberRegisterDto) {
 
         // 비밀번호 암호화 하기
         String encodedPassword = passwordEncoder.encode(memberRegisterDto.getPassword());
@@ -52,70 +54,31 @@ public class MemberService {
         member.setJoin_date(memberRegisterDto.getJoin_date());
         member.setRole(memberRegisterDto.getRole());
         member.setEnable(true);
+        member.setAddress(memberRegisterDto.getAddress());
+        member.setAddress_detail(memberRegisterDto.getAddress_detail());
+        member.setPostcode(memberRegisterDto.getPostcode());
 
 
         // 데이터 베이스에 저장
-        memberRepository.save(member);
+        Member updatedMember = memberRepository.save(member);
+
+        return updatedMember;
     }
 
-    public void adminJoin(AdminRegisterDto adminRegisterDto) {
 
-
-        if (securityKeyService.validateSecurityKey(adminRegisterDto.getSecurityKey())) {
-            // 비밀번호 암호화 하기
-            String encodedPassword = passwordEncoder.encode(adminRegisterDto.getPassword());
-
-            Member member = new Member();
-            member.setEmail(adminRegisterDto.getEmail());
-            member.setName(adminRegisterDto.getName());
-            member.setPassword(encodedPassword);
-            member.setGender(adminRegisterDto.getGender());
-            member.setTel(adminRegisterDto.getTel());
-            member.setJoin_date(adminRegisterDto.getJoin_date());
-            member.setRole(adminRegisterDto.getRole());
-            member.setEnable(true);
-
-
-            // 데이터 베이스에 저장
-            memberRepository.save(member);
-        } else {
-            throw new IllegalArgumentException("보안키가 맞지 않습니다.");
-        }
-
-    }
-
-    public Member login(MemberLoginDto memberLoginDto) {
+    public MemberTokenDto login(MemberLoginDto memberLoginDto) {
+        //UserDetailsService : Spring Security에서 사용자의 정보를 가져올 때 사용하는 서비스
         UserDetails userDetails = userDetailsService.loadUserByUsername(memberLoginDto.getEmail());
-        if(userDetails == null) {
-            throw new IllegalArgumentException("회원 정보를 찾을 수 없습니다.");
-        } else {
-            String password = memberLoginDto.getPassword();
-            if (passwordEncoder.matches(password, userDetails.getPassword())) {
-                authenticate(memberLoginDto.getEmail(), memberLoginDto.getPassword());
-                String token = jwtTokenUtil.generateToken(userDetails);
-                return Member.fromEntity(userDetails, token);
-            } else {
-                return null;
-            }
-        }
 
-        //데이터 베이스에서 회원 정보 찾기
-//        Member member = memberRepository.findByEmail(memberLoginDto.getEmail())
-//                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
-//
-//        String password = memberLoginDto.getPassword();
-//
-//        //비밀번호 암호화 된거랑 매치되는지 확인
-//        if (passwordEncoder.matches(password, member.getPassword())) {
-//            authenticate(memberLoginDto.getEmail(), memberLoginDto.getPassword());
-//            String token = jwtTokenUtil.generateToken(member);
-//            if(token != null && !token.isEmpty()){
-//                member.setToken(token);
-//            }
-//            return member;
-//        } else {
-//            return null;
-//        }
+        authenticate(memberLoginDto.getEmail(), memberLoginDto.getPassword());
+
+        String password = memberLoginDto.getPassword();
+        if (passwordEncoder.matches(password, userDetails.getPassword())) {
+            String token = jwtTokenUtil.generateToken(userDetails);
+            return MemberTokenDto.fromEntity(userDetails, token);
+        } else {
+            throw new IllegalArgumentException("잘못된 비밀번호 입니다.");
+        }
 
     }
 
@@ -123,28 +86,38 @@ public class MemberService {
         return memberRepository.findByEmail(memberRegisterDto.getEmail()).isPresent();
     }
 
+    public List<Member> getAllMembers() {
+        return memberRepository.findAll();
+    }
+
+    @Transactional
+    public void deleteMember(Long id) {
+        try {
+            if (profileFilesRepository.findByMemberId(id).isPresent()) {
+                profileFileService.deleteFile(id);
+                profileFilesRepository.deleteByMemberId(id);
+            }
+            memberRepository.deleteById(id);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+
     public void userDisabled(Member member) {
         member.setEnable(false);
         memberRepository.save(member);
     }
 
-    public Member userUpdate(Member member, MemberUpdateDto memberUpdateDto) {
-
-        String encodedPassword = passwordEncoder.encode(memberUpdateDto.getPassword());
-
-        Member memberUpdate = memberRepository.findByEmail(member.getEmail()).orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
-        memberUpdate.setPassword(encodedPassword);
-        memberUpdate.setName(memberUpdateDto.getName());
-        memberUpdate.setGender(memberUpdateDto.getGender());
-        memberUpdate.setTel(memberUpdateDto.getTel());
-        memberUpdate.setEmail(memberUpdateDto.getEmail());
-        memberUpdate.setProfile(memberUpdateDto.isProfile());
-
-        memberRepository.save(memberUpdate);
-
-        return memberUpdate;
+    //
+    public MemberResponseDto userUpdate(Member member, MemberUpdateDto updateDto) {
+        String encodedPassword = passwordEncoder.encode(updateDto.getPassword());
+        Member updateMember =  memberRepository.findByEmail(member.getEmail()).orElseThrow(
+                () -> new ResourceNotFoundException("Member", "Member Email", member.getEmail())
+        );
+        updateMember.update(encodedPassword, updateDto);
+        return MemberResponseDto.fromEntity(updateMember);
     }
-
 
     /**
      * 사용자 인증
@@ -159,5 +132,12 @@ public class MemberService {
         } catch (BadCredentialsException e) {
             throw new MemberException("비밀번호가 일치하지 않습니다.", HttpStatus.BAD_REQUEST);
         }
+    }
+
+    public MemberResponseDto getUser(Member member) {
+        Member getUser = memberRepository.findByEmail(member.getEmail()).orElseThrow(
+                () -> new ResourceNotFoundException("Member", "Member Email", member.getEmail())
+        );
+        return MemberResponseDto.fromEntity(getUser);
     }
 }

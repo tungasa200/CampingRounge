@@ -13,7 +13,7 @@ import lombok.Setter;
 public class MemberProfileFiles {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long file_id;
 
     // member 객체랑 다대일 관계 설정하기
